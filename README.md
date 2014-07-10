@@ -19,7 +19,7 @@ Beef intended to used as game script.
 
 ### call AS3 method from Lua
 
-1. Create AS3 method which called by Lua.
+1. Create AS3 Class which called as Lua function.
 ```as3
 public class FuncWaitTime extends SystemFunction {
     public function FuncWaitTime() {
@@ -42,7 +42,7 @@ scriptRuntime.addFunction('wait_time', new FuncWaitTime());
 
 3. Call AS3 code from Lua.
 ```as3
-var source:String = "wait_time()";
+var source:String = "wait_time(1000)";
 var c:Compiler = new Compiler();
 var fn:ScriptFunction = c.parse(source);
 var runtime:ScriptRuntime = new ScriptRuntime();
