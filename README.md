@@ -1,37 +1,25 @@
-# Beef - AS3 imepementation of Lua.
+# Beef
 
-##概要
-ActionScript3.0によるLuaインタプリタ実装です。
-難しい構文や標準関数の多くが未サポートです。
-Luaの関数としてActionScript3.0のコードを呼び出すことができます。
-これによりLuaスクリプトからAS3アプリケーションを制御させることができます。
+ActionScript3.0(AS3) implementation of Lua.
+Beef intended to used as game script.
 
-## 非互換機能(Incompatible Feature)
- - Unicode識別子(日本語などを変数名や関数名に使用できます)
+## Features
+ - parse and execute a Lua code.
+ - call as3.0 method from Lua.
+ - virtual thread.(script-truntime can share context with other script-runtime.)
+ - unicode Identifier.(incompatible with Lua)
 
-## 未実装機能(Not Impelemented).
+## Not Implemented Lua Specification
  - Metatable
  - table
  - Coroutines
+ - almost standard function.
 
 ## Code Example.
 
-```as3
-var source:String = "print('ABCDEFG')";
-var c:Compiler = new Compiler();
-var fn:ScriptFunction = c.parse(source);
-var runtime:ScriptRuntime = new ScriptRuntime();
-runtime.execute(fn);
-trace(runtime.printBuffer);
-```
+### call AS3 method from Lua
 
-## その他
-
-### AS3のコードを呼び出すには
-beef.script.sysfunc.SystemFunctionを継承したクラスを作成してcall()を実装します。
-ScriptRuntime#addFunction()を呼び出してクラスを登録します。
-
-一定時間スクリプトの実行を止める関数を作成する例
+1. Create AS3 method which called by Lua.
 ```as3
 public class FuncWaitTime extends SystemFunction {
     public function FuncWaitTime() {
@@ -47,9 +35,18 @@ public class FuncWaitTime extends SystemFunction {
 }
 ```
 
-作成した機能を関数として登録する例
+2. Register class as Lua function.
 ```as3
-scriptRuntime.addFunction('WaitTime', new FuncWaitTime());
+scriptRuntime.addFunction('wait_time', new FuncWaitTime());
+```
+
+3. Call AS3 code from Lua.
+```as3
+var source:String = "wait_time()";
+var c:Compiler = new Compiler();
+var fn:ScriptFunction = c.parse(source);
+var runtime:ScriptRuntime = new ScriptRuntime();
+runtime.execute(fn);
 ```
 
 ## License
