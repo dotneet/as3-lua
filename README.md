@@ -14,6 +14,8 @@ Beef intended to used as game script.
  - table
  - Coroutines
  - almost standard function.
+ - return statement
+ - while,for,repeate statment.
 
 ## Code Example.
 
@@ -43,6 +45,25 @@ var fn:ScriptFunction = c.parse(source);
 var runtime:ScriptRuntime = new ScriptRuntime();
 runtime.addFunction('wait_time', new FuncWaitTime());
 runtime.execute(fn);
+```
+
+### Lua Code Examaple.
+```Lua
+local a = 10
+g = a * a + 10
+c,d = a,g
+
+a = 1
+::ONEMORE::
+a = a + 1
+print(a)
+if a < 10 then goto ONEMORE; end
+
+function square(a)
+  print(a * a)
+end
+
+square(50)
 ```
 
 ## License
