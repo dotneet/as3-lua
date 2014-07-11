@@ -125,7 +125,7 @@ package beef.script {
 					}
 					break;
 				case (c === '*'): push(Token.TYPE_ASTARISK, '*'); c = next(); break;
-				case (c === '/'): push(Token.TYPE_MINUS, '/'); c = next(); break;
+				case (c === '/'): push(Token.TYPE_SLASH, '/'); c = next(); break;
 				case (c === '%'): push(Token.TYPE_PERCENT, '%'); c = next(); break;
 				case (c === '^'): push(Token.TYPE_CARET, '^'); c = next(); break;
 				case (c === '='):

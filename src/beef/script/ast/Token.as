@@ -90,6 +90,10 @@ package beef.script.ast {
 			return isLiteral() || mType == TYPE_IDENT;
 		}
 		
+		public function isUnaryOperator():Boolean {
+			return mType == TYPE_MINUS || mType == TYPE_NOT;
+		}
+		
 		public function toString():String {
 			return "<Token: line=" + mLine + " token:" + mToken + " type:" + mType + ">";
 		}

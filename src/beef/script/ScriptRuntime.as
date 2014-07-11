@@ -1,4 +1,5 @@
 package beef.script {
+	import beef.script.expr.NilValue;
 	import beef.script.sysfunc.LoadFileFunction;
 	import beef.script.event.ScriptEvent;
 	import beef.script.expr.BooleanValue;
@@ -92,8 +93,9 @@ package beef.script {
 		}
 		
 		public function appendPrintText(text:String):void {
-			mPrintBuffer += text + '\n';
+			mPrintBuffer += text;
 		}
+		
 		public function clearPrintBuffer():void {
 			mPrintBuffer = '';
 		}
@@ -161,7 +163,7 @@ package beef.script {
 			
 			switch( ope.op ) {
 				case Instruction.OPE_MOVE:
-					frame.register[ope.a] = frame.register[ope.b];
+					frame.register[ope.a] = frame.register[ope.b] == null ? NilValue.INSTANCE : frame.register[ope.b];
 					break;
 				case Instruction.OPE_LOADK:
 					frame.register[ope.a] = frame.func.getConst(ope.b);
@@ -174,7 +176,7 @@ package beef.script {
 					break;
 				case Instruction.OPE_LOADNIL:
 					for(var nilreg : uint = ope.a;nilreg <= ope.b; nilreg++) {
-                    	frame.register[nilreg] = null;
+                    	frame.register[nilreg] = NilValue.INSTANCE;
                     }
 					break;
 				case Instruction.OPE_GETGLOBAL:
@@ -183,7 +185,7 @@ package beef.script {
 					break;
 				case Instruction.OPE_SETGLOBAL:
 					name = frame.func.getConst(ope.b) as StringValue;
-					mGlobals[name.value] = frame.register[ope.a];
+					mGlobals[name.value] = frame.register[ope.a] == null ? NilValue.INSTANCE : frame.register[ope.a];
 					break;
 				case Instruction.OPE_GETUPVAL:
 				case Instruction.OPE_SETUPVAL:
@@ -203,11 +205,17 @@ package beef.script {
 					frame.register[ope.a] = new NumberValue(resolveRK(frame, ope.b).asNumber().value / resolveRK(frame, ope.c).asNumber().value);
 					break;
 				case Instruction.OPE_MOD:
+					frame.register[ope.a] = new NumberValue(resolveRK(frame, ope.b).asNumber().value % resolveRK(frame, ope.c).asNumber().value);
+					break;
 				case Instruction.OPE_POW:
-					throw new ScriptError('unsupported operation.');
+					frame.register[ope.a] = new NumberValue(Math.pow(resolveRK(frame, ope.b).asNumber().value, resolveRK(frame, ope.c).asNumber().value));
+					break;
 				case Instruction.OPE_UNM:
+					frame.register[ope.a] = new NumberValue(-resolveRK(frame, ope.b).asNumber().value);
+					break;
 				case Instruction.OPE_NOT:
-					throw new ScriptError('unsupported operation.');
+					frame.register[ope.a] = new BooleanValue(!resolveRK(frame, ope.b).asBoolean().value);
+					break;
 				case Instruction.OPE_LEN:
 				case Instruction.OPE_CONCAT:
 					throw new ScriptError('unsupported operation.');
@@ -256,10 +264,11 @@ package beef.script {
 	                if(!mStack.length) {
 						return;
 	                }
+					var finishedFrame:Frame = frame;
 	                frame = (mStack[mStack.length - 1] as Frame);
 	                
-	                for(var regpos : uint = frame.returnRegister;regpos < frame.returnRegister + returns.length; regpos++) {
-						frame.register[regpos] = returns[regpos - frame.returnRegister];
+	                for(var regpos : uint = finishedFrame.returnRegister;regpos < finishedFrame.returnRegister + returns.length; regpos++) {
+						frame.register[regpos] = returns[regpos - finishedFrame.returnRegister];
 	                }
 					return;
 				default:

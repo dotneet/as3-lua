@@ -5,6 +5,8 @@ package beef.script.expr {
 	 * @author shinji
 	 */
 	public class NilValue extends Value {
+		public static const INSTANCE:NilValue = new NilValue();
+		
 		public override function asBoolean():BooleanValue {
 			return BooleanValue.FALSE;
 		}

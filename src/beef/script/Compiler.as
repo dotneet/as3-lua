@@ -1,4 +1,5 @@
 package beef.script {
+	import flash.events.OutputProgressEvent;
 	import beef.script.ast.RefVar;
 	import beef.script.ast.Token;
 	import beef.script.expr.NumberValue;
@@ -87,7 +88,35 @@ package beef.script {
 					break;
 				}
 			}
+			
+			if ( look(Token.TYPE_RETURN) ) {
+				parseReturnStatement();
+				while ( look(Token.TYPE_SEMICOLON) ) {
+					consume();
+				}
+			}
 			stack.popLocalScope();
+		}
+		
+		protected function parseReturnStatement():void {
+			consume(Token.TYPE_RETURN);
+			var base:int = freereg();
+			var expCount:int = parseExpList();
+			addInstruction(Instruction.OPE_RETURN, base, expCount + 1, 0);
+		}
+		
+		protected function parseExpList():int {
+			var expCount:int = 0;
+			while ( currentToken.isLiteralOrIdent() || currentToken.isUnaryOperator() ) {
+				expCount++;
+				parseExp();
+				if ( look(Token.TYPE_COMMA) ) {
+					consume();
+				} else {
+					break;
+				}
+			}
+			return expCount;
 		}
 		
 		protected function parseAssignment(newLocal:Boolean):void {
@@ -100,24 +129,29 @@ package beef.script {
 				}	
 			}
 			
-			var expCount:int = 0;
-			var basereg:int = freereg();
-			while ( currentToken.isLiteralOrIdent() ) {
-				expCount++;
-				parseExp();
-				if ( look(Token.TYPE_COMMA) ) {
-					consume();
+			// load nil to all assigned variables.
+			var gblNameIdx:int = 0;
+			for each (var ref : RefVar in varlist.slice(1)) {
+				if ( ref.type == RefVar.TYPE_LOCAL ) {
+					addInstruction(Instruction.OPE_LOADNIL, ref.register, ref.register, 0);
+				} else if ( ref.type == RefVar.TYPE_GLOBAL ) {
+					var tmp : int = stack.freereg;
+					stack.addStackPositon(1);
+					addInstruction(Instruction.OPE_LOADNIL, tmp, tmp, 0);
+					addInstruction(Instruction.OPE_SETGLOBAL, tmp, gblNameIdx, 0);
 				} else {
-					break;
+					throw new ScriptError('table is not implemented');
 				}
 			}
+			
+			var basereg:int = freereg();
+			var expCount:int = parseExpList();
 			var expreg:int = basereg;
-			for each ( var ref:RefVar in varlist ) {
-				var gblNameIdx:int = 0;
+			for each ( ref in varlist ) {
 				if ( ref.type == RefVar.TYPE_GLOBAL ) {
 					gblNameIdx = addConst(new StringValue(ref.name));
 				}
-				if ( expCount-- > 0 ) {
+				//if ( expCount-- > 0 ) {
 					if ( ref.type == RefVar.TYPE_LOCAL ) {
 						addInstruction(Instruction.OPE_MOVE, ref.register, expreg++, 0);
 					} else if ( ref.type == RefVar.TYPE_GLOBAL ) {
@@ -125,18 +159,7 @@ package beef.script {
 					} else {
 						throw new ScriptError('table is not implemented');
 					}
-				} else {
-					if ( ref.type == RefVar.TYPE_LOCAL ) {
-						addInstruction(Instruction.OPE_LOADNIL, ref.register, ref.register, 0);
-					} else if ( ref.type == RefVar.TYPE_GLOBAL ) {
-						var tmp:int = stack.freereg;
-						stack.addStackPositon(1);
-						addInstruction(Instruction.OPE_LOADNIL, tmp, tmp, 0);
-						addInstruction(Instruction.OPE_SETGLOBAL, tmp, gblNameIdx, 0);
-					} else {
-						throw new ScriptError('table is not implemented');
-					}
-				}
+				//}
 			}
 			stack.freereg = basereg;
 		}
@@ -183,7 +206,7 @@ package beef.script {
 			parseArgs();
 			var paramNums:int = freereg() - base;
 			addInstruction(Instruction.OPE_GETGLOBAL, funcReg, idx, 0);
-			addInstruction(Instruction.OPE_CALL, funcReg, paramNums + 1, 2);
+			addInstruction(Instruction.OPE_CALL, funcReg, paramNums + 1, 0);
 			stack.freereg = base;
 		}
 		
@@ -327,13 +350,12 @@ package beef.script {
 		
 		protected function parseExpMulDiv():void {
 			// TODO: 四則演算命令はconstにアクセスできるのでリテラルの場合はレジスタを使わないようにできる
-			
 			var base:int = freereg();
-			parseExpFactor();
+			parseExpModePow();
 			while ( look(Token.TYPE_ASTARISK) || look(Token.TYPE_SLASH) ) {
 				var type:int = getToken(0).type;
 				consume();
-				parseExpFactor();
+				parseExpModePow();
 				if ( type == Token.TYPE_ASTARISK ) {
 					addInstruction(Instruction.OPE_MUL, base, base, base + 1);
 				} else if ( type == Token.TYPE_SLASH ) {
@@ -342,9 +364,26 @@ package beef.script {
 				stack.freereg = base + 1;
 			}
 		}
+		
+		protected function parseExpModePow():void {
+			var base:int = freereg();
+			parseExpFactor();
+			while ( look(Token.TYPE_PERCENT) || look(Token.TYPE_CARET) ) {
+				var type:int = getToken(0).type;
+				consume();
+				parseExpFactor();
+				if ( type == Token.TYPE_PERCENT ) {
+					addInstruction(Instruction.OPE_MOD, base, base, base + 1);
+				} else if ( type == Token.TYPE_CARET ) {
+					addInstruction(Instruction.OPE_POW, base, base, base + 1);
+				}
+				stack.freereg = base + 1;
+			}
+		}
+		
 		protected function parseExpFactor():void {
 			var token:Token = getToken(0);
-			
+			var reg:int = freereg();
 			if ( token.isLiteral() ) {
 				parseValue();
 			} else if ( look(Token.TYPE_IDENT) ) {
@@ -361,7 +400,14 @@ package beef.script {
 				} else {
 					error("右括弧が見つからない");
 				}
-				
+			} else if ( look(Token.TYPE_MINUS) ) {
+				consume();
+				parseExp();
+				addInstruction(Instruction.OPE_UNM, reg, reg, 0);
+			} else if ( look(Token.TYPE_NOT) ) {
+				consume();
+				parseExp();
+				addInstruction(Instruction.OPE_NOT, reg, reg, 0);
 			} else {
 				error("式がない");
 			}

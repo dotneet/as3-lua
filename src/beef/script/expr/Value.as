@@ -10,7 +10,7 @@ package beef.script.expr {
 			throw new Error("asNumber()が実装されていません");
 		}
 		public function asString():StringValue {
-			throw new Error("asNumber()が実装されていません");
+			throw new Error("asString()が実装されていません");
 		}
 	}
 }

@@ -1,6 +1,9 @@
 package beef.script {
 	import beef.script.expr.BooleanValue;
+	import beef.script.expr.NumberValue;
+	import beef.script.expr.StringValue;
 	import beef.script.expr.Value;
+
 	import flash.utils.Dictionary;
 	public class ScriptFunction extends Value {
 		// upvalues数
@@ -114,6 +117,14 @@ package beef.script {
 		
 		public override function asBoolean():BooleanValue {
 			return BooleanValue.TRUE;
+		}
+		
+		public override function asNumber():NumberValue {
+			return new NumberValue(1);
+		}
+		
+		public override function asString():StringValue {
+			return new StringValue("Function()");
 		}
 		
 		/** 

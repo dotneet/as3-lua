@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" xmlns="*"
+xmlns:flexUnitUIRunner="http://www.adobe.com/2009/flexUnitUIRunner" 
+	width="1024" height="768"
+	creationComplete="onCreationComplete()">
+	<mx:Script>
+		<![CDATA[
+			import org.flexunit.listeners.UIListener;
+			import org.flexunit.runner.FlexUnitCore;
+
+			private function onCreationComplete() : void {
+				var core : FlexUnitCore = new FlexUnitCore();
+				core.addListener(new UIListener(testRunner));
+				core.run(TestSyntax);
+			}
+		]]>
+	</mx:Script>
+<flexUnitUIRunner:TestRunnerBase id="testRunner" width="100%" height="100%"/>
+</mx:Application>
