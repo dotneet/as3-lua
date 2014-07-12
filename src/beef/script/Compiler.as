@@ -1,4 +1,5 @@
 package beef.script {
+	import beef.script.expr.TableValue;
 	import beef.script.ast.RefVar;
 	import beef.script.ast.Token;
 	import beef.script.expr.NumberValue;
@@ -13,8 +14,6 @@ package beef.script {
 		public static const LOG_NONE:int = 0;
 		public static const LOG_INFO:int = 1;
 		public static const LOG_DEBUG:int = 2;
-		
-		public static const MAX_STACK:int = 250;
 		
 		protected var mStack:Vector.<ScriptFunction> = new Vector.<ScriptFunction>();
 		
@@ -78,7 +77,7 @@ package beef.script {
 				if ( look(Token.TYPE_IDENT) ) {
 					if ( look(Token.TYPE_LPARENT,1) ) {
 						parseFuncCall();
-					} else if ( look(Token.TYPE_COMMA, 1) || look(Token.TYPE_EQUAL, 1) ) {
+					} else if ( look(Token.TYPE_COMMA, 1) || look(Token.TYPE_EQUAL, 1) || look(Token.TYPE_PERIOD,1) || look(Token.TYPE_LBRACKET) ) {
 						parseAssignment(false);
 					} else {
 						error("構文エラー:" + currentToken);
@@ -121,7 +120,7 @@ package beef.script {
 		
 		protected function parseExpList():int {
 			var expCount:int = 0;
-			while ( currentToken.isLiteralOrIdent() || currentToken.isUnaryOperator() ) {
+			while ( currentToken.isLiteralOrIdent() || currentToken.isUnaryOperator() || look(Token.TYPE_LPARENT) || look(Token.TYPE_LBRACE) ) {
 				expCount++;
 				parseExp();
 				if ( look(Token.TYPE_COMMA) ) {
@@ -159,21 +158,22 @@ package beef.script {
 			}
 			
 			var basereg:int = freereg();
-			var expCount:int = parseExpList();
+			parseExpList();
 			var expreg:int = basereg;
 			for each ( ref in varlist ) {
 				if ( ref.type == RefVar.TYPE_GLOBAL ) {
 					gblNameIdx = addConst(new StringValue(ref.name));
 				}
-				//if ( expCount-- > 0 ) {
-					if ( ref.type == RefVar.TYPE_LOCAL ) {
-						addInstruction(Instruction.OPE_MOVE, ref.register, expreg++, 0);
-					} else if ( ref.type == RefVar.TYPE_GLOBAL ) {
-						addInstruction(Instruction.OPE_SETGLOBAL, expreg++, gblNameIdx, 0);
-					} else {
-						throw new ScriptError('table is not implemented');
-					}
-				//}
+				
+				if ( ref.type == RefVar.TYPE_LOCAL ) {
+					addInstruction(Instruction.OPE_MOVE, ref.register, expreg++, 0);
+				} else if ( ref.type == RefVar.TYPE_GLOBAL ) {
+					addInstruction(Instruction.OPE_SETGLOBAL, expreg++, gblNameIdx, 0);
+				} else if ( ref.type == RefVar.TYPE_REFERENCE ) {
+					addInstruction(Instruction.OPE_SETTABLE, ref.register, ref.keyRegister, expreg++);
+				} else {
+					throw new ScriptError('unknown error');
+				}
 			}
 			stack.freereg = basereg;
 		}
@@ -187,18 +187,62 @@ package beef.script {
 			var varlist:Vector.<RefVar> = new Vector.<RefVar>();
 			while ( look(Token.TYPE_IDENT) ) {
 				var name:String = getToken(0).token;
+				consume();
 				var register:int = 0;
 				if ( newLocal ) {
 					register = stack.addLocal(name);
 				} else {
 					register = stack.findLocal(name);
 				}
-				if ( register != -1 ) {
-					varlist.push(new RefVar(RefVar.TYPE_LOCAL, name, register));
+				if ( look(Token.TYPE_PERIOD) || look(Token.TYPE_LBRACKET) ) {
+					var tmpRegister:int = 0;
+					if ( register == -1 ) {
+						var gblNameIdx:int = addConst(new StringValue(name));
+						var nameRegister:int = freereg();
+						addInstruction(Instruction.OPE_LOADK, increg(), gblNameIdx, 0);
+						register = freereg();
+						addInstruction(Instruction.OPE_GETGLOBAL, increg(), nameRegister, 0);
+					}
+					while ( look(Token.TYPE_PERIOD) || look(Token.TYPE_LBRACKET) ) {
+						if ( look(Token.TYPE_PERIOD) ) {
+							consume();
+							if ( look(Token.TYPE_IDENT) ) {
+								var keyStr:String = getToken(0).token;
+								consume();
+								var keyRegister:int = addConst(new StringValue(keyStr));
+								
+								if ( look(Token.TYPE_PERIOD) || look(Token.TYPE_LBRACKET) ) {
+									tmpRegister = increg();
+									addInstruction(Instruction.OPE_GETTABLE, tmpRegister, register, rk(keyRegister));
+									register = tmpRegister; 
+								} else {
+									varlist.push(new RefVar(RefVar.TYPE_REFERENCE, name, register, rk(keyRegister)));
+								}
+							} else {
+								error("unexpected token:" + getToken(0));
+							}
+						} else if ( look(Token.TYPE_LBRACKET) ) {
+							consume();
+							var expReg:int = freereg();
+							parseExp();
+							consume();
+							
+							if ( look(Token.TYPE_PERIOD) || look(Token.TYPE_LBRACKET) ) {
+								tmpRegister = increg();
+								addInstruction(Instruction.OPE_GETTABLE, tmpRegister, register, expReg);
+								register = tmpRegister; 
+							} else {
+								varlist.push(new RefVar(RefVar.TYPE_REFERENCE, name, register, expReg));
+							}
+						}
+					}
 				} else {
-					varlist.push(new RefVar(RefVar.TYPE_GLOBAL, name, 0));
+					if ( register != -1 ) {
+						varlist.push(new RefVar(RefVar.TYPE_LOCAL, name, register, 0));
+					} else {
+						varlist.push(new RefVar(RefVar.TYPE_GLOBAL, name, 0, 0));
+					}	
 				}
-				consume();
 				if ( look(Token.TYPE_COMMA) ) {
 					consume();
 				} else {
@@ -381,11 +425,11 @@ package beef.script {
 		
 		protected function parseExpModePow():void {
 			var base:int = freereg();
-			parseExpFactor();
+			parseExpUnary();
 			while ( look(Token.TYPE_PERCENT) || look(Token.TYPE_CARET) ) {
 				var type:int = getToken(0).type;
 				consume();
-				parseExpFactor();
+				parseExpUnary();
 				if ( type == Token.TYPE_PERCENT ) {
 					addInstruction(Instruction.OPE_MOD, base, base, base + 1);
 				} else if ( type == Token.TYPE_CARET ) {
@@ -395,9 +439,25 @@ package beef.script {
 			}
 		}
 		
-		protected function parseExpFactor():void {
-			var token:Token = getToken(0);
+		protected function parseExpUnary():void {
 			var reg:int = freereg();
+			if ( look(Token.TYPE_MINUS) ) {
+				consume();
+				parseExp();
+				addInstruction(Instruction.OPE_UNM, reg, reg, 0);
+			} else if ( look(Token.TYPE_NOT) ) {
+				consume();
+				parseExp();
+				addInstruction(Instruction.OPE_NOT, reg, reg, 0);
+			} else {
+				parseExpFactor();
+			}
+		}
+		
+		protected function parseExpFactor():void {
+			var reg:int = freereg();
+			var hasError:Boolean = false;
+			var token:Token = getToken(0);
 			if ( token.isLiteral() ) {
 				parseValue();
 			} else if ( look(Token.TYPE_IDENT) ) {
@@ -413,17 +473,46 @@ package beef.script {
 					consume();
 				} else {
 					error("右括弧が見つからない");
+					hasError = true;
 				}
-			} else if ( look(Token.TYPE_MINUS) ) {
+			} else if ( look(Token.TYPE_LBRACE) ){
+				var hashSize:int = 0;
+				var arraySize:int = 0;
+				var tableRegister:int = increg();
+				var newtableOpe:Instruction = addInstruction(Instruction.OPE_NEWTABLE, tableRegister, arraySize, hashSize);
 				consume();
-				parseExp();
-				addInstruction(Instruction.OPE_UNM, reg, reg, 0);
-			} else if ( look(Token.TYPE_NOT) ) {
-				consume();
-				parseExp();
-				addInstruction(Instruction.OPE_NOT, reg, reg, 0);
+				while ( !look(Token.TYPE_RBRACE) ) {
+					if ( look(Token.TYPE_IDENT) && look(Token.TYPE_EQUAL,1) ) {
+						var keyName:String = getToken(0).token;
+						consume();
+						consume();
+						var expReg:int = freereg();
+						parseExp();
+						hashSize++;
+						var nameReg:int = addConst(new StringValue(keyName));
+						addInstruction(Instruction.OPE_SETTABLE, tableRegister, rk(nameReg), expReg);
+					} else {
+						parseExp();
+						arraySize++;
+					}
+					if ( !look(Token.TYPE_COMMA) ) {
+						break;
+					}
+					consume();
+				}
+				
+				newtableOpe.b = arraySize;
+				newtableOpe.c = hashSize;
+				addInstruction(Instruction.OPE_SETLIST, tableRegister, tableRegister, 1);
+				consume();	// right brace
 			} else {
 				error("式がない");
+				hasError = true;
+			}
+			if ( !hasError ) {
+				while ( look(Token.TYPE_PERIOD) || look(Token.TYPE_LBRACKET) ) {
+					parseTableVar(reg);
+				}
 			}
 		}
 		
@@ -469,7 +558,32 @@ package beef.script {
 				var r:int = increg();
 				addInstruction(Instruction.OPE_GETGLOBAL, r, i, 0);
 			}
-			
+		}
+		
+		protected function parseTableVar(valueReg:int):void {
+			if ( look(Token.TYPE_PERIOD) ) {
+				consume();
+				var name:String = getToken(0).token;
+				var nameConstId:int = addConst(new StringValue(name));
+				
+				addInstruction(Instruction.OPE_GETTABLE, valueReg, valueReg, rk(nameConstId));
+				consume();
+			} else if (look(Token.TYPE_LBRACKET) ) {
+				consume();
+				var expReg:int = freereg();
+				parseExp();
+				var localIdx : int = stack.findLocal(name);
+				if ( localIdx != -1 ) {
+					addInstruction(Instruction.OPE_MOVE, increg(), localIdx, 0);
+				} else {
+					var i : int = addConst(new StringValue(name));
+					var r : int = increg();
+					addInstruction(Instruction.OPE_GETGLOBAL, r, i, 0);
+				}
+				addInstruction(Instruction.OPE_GETTABLE, valueReg, valueReg, expReg);
+				consume(Token.TYPE_RBRACKET);
+				stack.freereg = expReg;
+			}	
 		}
 		
 		// '::' + 識別子 + '::'
@@ -688,6 +802,10 @@ package beef.script {
 			if ( mLogLevel > LOG_NONE ) {
 				trace(msg);
 			}
+		}
+		
+		private function rk(constIdx:int):int {
+			return LuaConstants.MAX_STACK + constIdx;
 		}
 		
 		private function dumpFunctions():void {

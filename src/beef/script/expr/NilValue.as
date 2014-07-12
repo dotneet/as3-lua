@@ -1,9 +1,6 @@
 package beef.script.expr {
 	import beef.script.expr.Value;
 
-	/**
-	 * @author shinji
-	 */
 	public class NilValue extends Value {
 		public static const INSTANCE:NilValue = new NilValue();
 		

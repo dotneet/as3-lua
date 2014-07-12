@@ -1,9 +1,6 @@
 package beef.script.expr {
 	import beef.script.expr.Value;
 
-	/**
-	 * @author shinji
-	 */
 	public class NumberValue extends Value {
 		protected var mValue:Number;
 		public function NumberValue(value:Number) {

@@ -1,7 +1,4 @@
 package beef.script.expr {
-	/**
-	 * @author shinji
-	 */
 	public class StringValue extends Value {
 		protected var mValue:String;
 		public function StringValue(value:String):void {

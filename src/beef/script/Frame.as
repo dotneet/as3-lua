@@ -3,7 +3,7 @@ package beef.script {
 	public class Frame {
 		public var pc:int;
 		public var retval:Value;
-		public var register:Vector.<Value> = new Vector.<Value>(Compiler.MAX_STACK);
+		public var register:Vector.<Value> = new Vector.<Value>(LuaConstants.MAX_STACK);
 		public var func:ScriptFunction;
 		public var returnRegister:int;
 		public var returns:int;

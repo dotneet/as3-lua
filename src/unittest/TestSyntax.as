@@ -1,4 +1,5 @@
 package unittest {
+	import air.update.utils.FileUtils;
 	import beef.script.Compiler;
 	import beef.script.ScriptFunction;
 	import beef.script.ScriptRuntime;
@@ -93,6 +94,21 @@ package unittest {
 			Assert.assertEquals("1", execAndPrint("function f() return 1,2,3; end; local a,b,c = f();", "a"));
 			Assert.assertEquals("2", execAndPrint("function f() return 1,2,3; end; local a,b,c = f();", "b"));
 			Assert.assertEquals("3", execAndPrint("function f() return 1,2,3; end; local a,b,c = f();", "c"));
+		}
+		
+		[Test]
+		public function table():void {
+			Assert.assertEquals("nil", execAndPrint("a = { }", "a[0]"));
+			Assert.assertEquals("1", execAndPrint("a = {1,2,3}", "a[1]"));
+			Assert.assertEquals("2", execAndPrint("a = {1,2,3}", "a[2]"));
+			Assert.assertEquals("3", execAndPrint("a = {1,2,3}", "a[3]"));
+			
+			Assert.assertEquals("5", execAndPrint("a = {1,b=5,3}", "a.b"));
+			Assert.assertEquals("5", execAndPrint("a = {1,b={c=5},3}", "a.b.c"));
+			
+			Assert.assertEquals("10", execAndPrint("a = {}; a.b = 10", "a.b"));
+			Assert.assertEquals("10", execAndPrint("local a = {}; a.b = 10", "a.b"));
+			Assert.assertEquals("nil", execAndPrint("local a = {}; a.b = 10", "a.c"));
 		}
 	}
 }

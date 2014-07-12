@@ -12,11 +12,14 @@ package beef.script.ast {
 		public var name:String;
 		/** ローカル変数またはテーブルへの参照を保持するレジスタ */
 		public var register:int;
+		/** テーブルのkeyを保持するレジスタ */
+		public var keyRegister:int;
 		
-		public function RefVar(type:int, name:String, register:int) {
+		public function RefVar(type:int, name:String, register:int, keyRegister:int) {
 			this.type = type;
 			this.name = name;
 			this.register = register;
+			this.keyRegister = keyRegister;
 		}
 	}
 }

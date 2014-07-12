@@ -1,4 +1,5 @@
 package beef.script {
+	import beef.script.expr.TableValue;
 	import beef.script.expr.NilValue;
 	import beef.script.sysfunc.LoadFileFunction;
 	import beef.script.event.ScriptEvent;
@@ -18,6 +19,7 @@ package beef.script {
 	[Event(name="runtime_error", type="beef.script.event.ScriptEvent")]
 	[Event(name="finish", type="beef.script.event.ScriptEvent")]
 	public class ScriptRuntime extends EventDispatcher {
+		
 		/** 未実行 */
 		public static const STATE_NOT_RUN:int = 0;
 		/** 実行中 */
@@ -202,8 +204,6 @@ package beef.script {
 					break;
 				case Instruction.OPE_GETUPVAL:
 				case Instruction.OPE_SETUPVAL:
-				case Instruction.OPE_GETTABLE:
-				case Instruction.OPE_SETTABLE:
 					throw new ScriptError('unsupported operation.');
 				case Instruction.OPE_ADD:
 					frame.register[ope.a] = new NumberValue(resolveRK(frame, ope.b).asNumber().value + resolveRK(frame, ope.c).asNumber().value);
@@ -284,6 +284,25 @@ package beef.script {
 						frame.register[regpos] = returns[regpos - finishedFrame.returnRegister];
 	                }
 					return;
+				case Instruction.OPE_NEWTABLE:
+					frame.register[ope.a] = new TableValue(ope.b, ope.c);
+					break;
+				case Instruction.OPE_SETLIST:
+					var table:TableValue = frame.register[ope.a] as TableValue;
+					var endIndex:int = ope.b == 0 ? table.arraySize : ope.b;
+					for ( var i:int = 1; i <= endIndex; i++ ) {
+						var tableIdx:NumberValue = new NumberValue((ope.c-1)*LuaConstants.LFIELDS_PER_FLUSH+i);
+						table.setValue(tableIdx, frame.register[ope.a + i]);
+					}
+					break;
+				case Instruction.OPE_GETTABLE:
+					table = frame.register[ope.b] as TableValue;
+					frame.register[ope.a] =  table.getValue(resolveRK(frame, ope.c));
+					break;
+				case Instruction.OPE_SETTABLE:
+					table = frame.register[ope.a] as TableValue;
+					table.setValue(resolveRK(frame, ope.b), resolveRK(frame, ope.c));
+					break;
 				default:
 					throw new ScriptError('Undefined Instruction: OPE=' + ope.op);
 			}
@@ -343,10 +362,10 @@ package beef.script {
 		
 		// RK(n) の解決
 		private function resolveRK(frame:Frame, i:int):Value {
-			if ( i < Compiler.MAX_STACK ) {
+			if ( i < LuaConstants.MAX_STACK ) {
 				return frame.register[i];
 			} else {
-				return frame.func.getConst(i - Compiler.MAX_STACK);
+				return frame.func.getConst(i - LuaConstants.MAX_STACK);
 			}
 		}
 		

@@ -1,8 +1,5 @@
 package beef.script.expr {
 
-	/**
-	 * @author shinji
-	 */
 	public class BooleanValue extends Value {
 		public static const TRUE:BooleanValue = new BooleanValue(true);
 		public static const FALSE:BooleanValue = new BooleanValue(false);

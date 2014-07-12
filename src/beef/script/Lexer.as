@@ -76,6 +76,7 @@ package beef.script {
 					c = next();
 					break;
 				case (c === ','): push(Token.TYPE_COMMA, ','); c = next(); break;
+				case (c === '.'): push(Token.TYPE_PERIOD, '.'); c = next(); break;
 				case (c === ':'):
 					c = next();
 					if ( c === ':' ) {
@@ -180,7 +181,7 @@ package beef.script {
 				case (c === '['):
 					c = next();
 					if ( c != '[' ) {
-						error("不正な文字を検出:" + c + ":" + c.charCodeAt());
+						push(Token.TYPE_LBRACKET,c);
 					} else {
 						c = next();
 						if ( c == "\n" ) {
@@ -199,6 +200,9 @@ package beef.script {
 						push(Token.TYPE_STRING, str);
 					}
 					break;
+				case (c ===']'): push(Token.TYPE_RBRACKET, ']'); c = next(); break;
+				case (c ==='{'): push(Token.TYPE_LBRACE, '{'); c = next(); break;
+				case (c ==='}'): push(Token.TYPE_RBRACE, '}'); c = next(); break;
 				case (!isNaN(parseInt(c))):
 					c = next();
 					while ( !isNaN(parseInt(c)) ) {
