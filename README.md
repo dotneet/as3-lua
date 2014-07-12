@@ -11,10 +11,9 @@ Beef intended to used as game script.
 
 ## Not Implemented Lua Specification
  - Metatable
- - table
  - Coroutines
  - almost standard function.
- - while,for,repeate statment.
+ - for,repeate statment.
 
 ## Code Example.
 
