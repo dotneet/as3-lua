@@ -14,7 +14,6 @@ Beef intended to used as game script.
  - table
  - Coroutines
  - almost standard function.
- - return statement
  - while,for,repeate statment.
 
 ## Code Example.
