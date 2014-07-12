@@ -27,6 +27,10 @@ package beef.script {
 		/** 終了 */
 		public static const STATE_FINISH:int = 3;
 		
+		public static const LOG_NONE:int = 0;
+		public static const LOG_INFO:int = 1;
+		public static const LOG_DEBUG:int = 2;
+		
 		protected var mProgramCounter:int = 0;
 		protected var mStack:Vector.<Frame> = new Vector.<Frame>();
 		protected var mFunctions:Dictionary = new Dictionary();
@@ -46,6 +50,15 @@ package beef.script {
 		}
 		public function get isStop():Boolean {
 			return mState == STATE_STOP;
+		}
+		
+		// Log Level
+		protected var mLogLevel:int = LOG_NONE;
+		public function set logLevel(level:int):void {
+			mLogLevel = level;
+		}
+		public function get logLevel():int {
+			return mLogLevel;
 		}
 		
 		public function ScriptRuntime():void {
@@ -338,7 +351,9 @@ package beef.script {
 		}
 		
 		private function log(msg:String):void {
-			//trace(msg);
+			if ( mLogLevel > LOG_NONE ) {
+				trace(msg);
+			}
 		}
 	}
 }

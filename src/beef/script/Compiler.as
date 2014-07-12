@@ -1,15 +1,19 @@
 package beef.script {
-	import flash.events.OutputProgressEvent;
 	import beef.script.ast.RefVar;
 	import beef.script.ast.Token;
 	import beef.script.expr.NumberValue;
 	import beef.script.expr.StringValue;
 	import beef.script.expr.Value;
+
 	import flash.utils.Dictionary;
 	/**
 	 * @author shinji
 	 */
 	public class Compiler {
+		public static const LOG_NONE:int = 0;
+		public static const LOG_INFO:int = 1;
+		public static const LOG_DEBUG:int = 2;
+		
 		public static const MAX_STACK:int = 250;
 		
 		protected var mStack:Vector.<ScriptFunction> = new Vector.<ScriptFunction>();
@@ -18,11 +22,19 @@ package beef.script {
 		protected var mErrors:Vector.<String> = new Vector.<String>();
 		protected var mTokens:Vector.<Token>;
 		protected var mPos:int;
+		protected var mLogLevel:int = LOG_NONE;
 		
 		public function Compiler() {
 			var mainFunc:ScriptFunction = new ScriptFunction();
 			mStack.push(mainFunc);
 			mFunctions["__MAIN__"] = mainFunc;
+		}
+		
+		public function set logLevel(level:int):void {
+			mLogLevel = level;
+		}
+		public function get logLevel():int {
+			return mLogLevel;
 		}
 		
 		public function get errors():Vector.<String> {
@@ -82,6 +94,8 @@ package beef.script {
 					parseGotoStatement();
 				} else if ( look(Token.TYPE_IF) ) {
 					parseIfStatement();
+				} else if ( look(Token.TYPE_WHILE) ) {
+					parseWhileStatement();
 				} else if ( look(Token.TYPE_SEMICOLON) ) {
 					consume();
 				} else {
@@ -577,6 +591,27 @@ package beef.script {
 			}
 		}
 		
+		protected function parseWhileStatement():void {
+			consume(Token.TYPE_WHILE);
+			var r0:int = stack.freereg;
+			var testAddr:int = nextAddress;
+			parseExp();
+			stack.freereg = r0;			
+			addInstruction(Instruction.OPE_TEST, r0, 0, 0);
+			var jmpAddr:int = nextAddress;
+			var jmpOpe:Instruction = addInstruction(Instruction.OPE_JMP, 0, 0, 0);
+			if ( look(Token.TYPE_DO) ) {
+				consume();
+				parseBlock();
+				addInstruction(Instruction.OPE_JMP, testAddr - nextAddress, 0, 0);
+			}
+			jmpOpe.a = nextAddress - jmpAddr - 1;
+			
+			if ( !consume(Token.TYPE_END) ) {
+				error('while文に対応するendが見つかりません');
+			}
+		}
+		
 		protected function addInstruction(op:int, a:int, b:int, c:int):Instruction {
 			var inst:Instruction = new Instruction(op, a, b, c);
 			mStack[mStack.length - 1].addInstruction(inst);
@@ -650,7 +685,9 @@ package beef.script {
 		}
 		
 		private function log(msg:String):void {
-			// trace(msg);
+			if ( mLogLevel > LOG_NONE ) {
+				trace(msg);
+			}
 		}
 		
 		private function dumpFunctions():void {

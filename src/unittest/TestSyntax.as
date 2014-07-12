@@ -6,6 +6,8 @@ package unittest {
 	import flexunit.framework.Assert;
 
 	public class TestSyntax {
+		private var showLog:Boolean = false;
+		
 		private function execLiner(source : String) : String {
 			return execAndPrint("result = " + source, "result");
 		}
@@ -13,6 +15,10 @@ package unittest {
 		private function execAndPrint(source : String, varname : String) : String {
 			var compiler : Compiler = new Compiler();
 			var script : ScriptFunction = compiler.parse(source + ";" + "print(" + varname + ")");
+			if ( showLog ) {
+				trace(source);
+				script.dump();
+			}
 			if ( compiler.errors.length ) {
 				for each ( var error:String in compiler.errors ) {
 					trace(error);
@@ -20,6 +26,9 @@ package unittest {
 				return null;
 			}
 			var runtime : ScriptRuntime = new ScriptRuntime();
+			if  (showLog) {
+				runtime.logLevel = ScriptRuntime.LOG_DEBUG;
+			}
 			runtime.execute(script);
 			return runtime.printBuffer;
 		}
@@ -52,6 +61,12 @@ package unittest {
 			Assert.assertEquals(2, execAndPrint("a = 1; if true then a = 2; else a = 3; end", "a"));
 			Assert.assertEquals(3, execAndPrint("a = 1; if false then a = 2; else a = 3; end", "a"));
 			Assert.assertEquals(4, execAndPrint("a = 1; if false then a = 2; elseif false then a = 3; else a = 4; end", "a"));
+		}
+		
+		[Test]
+		public function whileStatement() : void {
+			Assert.assertEquals(5, execAndPrint("a = 1; while a < 5 do a = a + 1 end", "a"));
+			Assert.assertEquals(10, execAndPrint("a = 1; b = 1; while a < 5 or b < 10 do a = a + 1; b = b + 1 end", "a"));
 		}
 		
 		[Test]
