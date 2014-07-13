@@ -1,11 +1,12 @@
 package beef.script.sysfunc {
-	import beef.script.ScriptFunction;
 	import air.update.utils.FileUtils;
-	import beef.script.Chunk;
+
 	import beef.script.Compiler;
+	import beef.script.ScriptFunction;
 	import beef.script.ScriptRuntime;
 	import beef.script.expr.BooleanValue;
 	import beef.script.expr.Value;
+
 	import flash.filesystem.File;
 
 	public class LoadFileFunction extends SystemFunction {

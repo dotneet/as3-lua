@@ -1,4 +1,4 @@
-package beef.script.ast {
+package beef.script.compiler {
 	public class RefVar {
 		/** registerはローカル変数を示す */
 		public static const TYPE_LOCAL:int = 1;

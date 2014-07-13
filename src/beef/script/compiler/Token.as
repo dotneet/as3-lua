@@ -1,7 +1,5 @@
-package beef.script.ast {
-	/**
-	 * @author shinji
-	 */
+package beef.script.compiler {
+	
 	public class Token {
 		public static const TYPE_IDENT:int = 1;
 		public static const TYPE_NUMBER:int = 2;

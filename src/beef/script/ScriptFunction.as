@@ -3,6 +3,7 @@ package beef.script {
 	import beef.script.expr.NumberValue;
 	import beef.script.expr.StringValue;
 	import beef.script.expr.Value;
+	import beef.script.compiler.UnresolvedLabelJump;
 
 	import flash.utils.Dictionary;
 	public class ScriptFunction extends Value {
@@ -18,7 +19,7 @@ package beef.script {
 		private var mFunctions:Dictionary = new Dictionary();
 		// ラベルテーブル(GOTOのジャンプ先解決用)
 		private var mLabels:Dictionary = new Dictionary();
-		private var mUnresolevedGotos:Vector.<UnresolvedJump> = new Vector.<UnresolvedJump>();
+		private var mUnresolevedGotos:Vector.<UnresolvedLabelJump> = new Vector.<UnresolvedLabelJump>();
 		
 		private var mInstructions:Vector.<Instruction> = new Vector.<Instruction>();
 		
@@ -69,7 +70,7 @@ package beef.script {
 			mLabels[name] = addr;
 		}
 		public function addUnresolevedGoto(name:String, addr:int, inst:Instruction):void {
-			mUnresolevedGotos.push(new UnresolvedJump(name,inst,addr));
+			mUnresolevedGotos.push(new UnresolvedLabelJump(name,inst,addr));
 		}
 		
 		/**
@@ -134,7 +135,7 @@ package beef.script {
 		public function resolveGotoStatement():Vector.<String> {
 			// 解決できなかったラベル
 			var unresolevedLabels:Vector.<String> = new Vector.<String>();
-			for each ( var u:UnresolvedJump in mUnresolevedGotos ) {
+			for each ( var u:UnresolvedLabelJump in mUnresolevedGotos ) {
 				if ( mLabels[u.label] === undefined ) {
 					unresolevedLabels.push(u.label);
 				} else {

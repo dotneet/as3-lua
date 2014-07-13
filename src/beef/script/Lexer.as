@@ -1,8 +1,6 @@
 package beef.script {
-	import beef.script.ast.Token;
-	/**
-	 * @author shinji
-	 */
+	import beef.script.compiler.Token;
+	
 	public class Lexer {
 		
 		private static const RESERVED_WORDS:Object = {

@@ -68,6 +68,8 @@ package unittest {
 		public function whileStatement() : void {
 			Assert.assertEquals(5, execAndPrint("a = 1; while a < 5 do a = a + 1 end", "a"));
 			Assert.assertEquals(10, execAndPrint("a = 1; b = 1; while a < 5 or b < 10 do a = a + 1; b = b + 1 end", "a"));
+			// break
+			Assert.assertEquals(3, execAndPrint("a = 1; while a < 5 do if a == 3 then break end a = a + 1 end", "a"));
 		}
 		
 		[Test]

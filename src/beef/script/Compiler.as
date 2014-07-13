@@ -1,15 +1,14 @@
 package beef.script {
-	import beef.script.expr.TableValue;
-	import beef.script.ast.RefVar;
-	import beef.script.ast.Token;
+	import beef.script.compiler.RefVar;
+	import beef.script.compiler.Token;
+	import beef.script.compiler.UnresolvedJump;
 	import beef.script.expr.NumberValue;
 	import beef.script.expr.StringValue;
 	import beef.script.expr.Value;
 
 	import flash.utils.Dictionary;
-	/**
-	 * @author shinji
-	 */
+
+
 	public class Compiler {
 		public static const LOG_NONE:int = 0;
 		public static const LOG_INFO:int = 1;
@@ -22,6 +21,8 @@ package beef.script {
 		protected var mTokens:Vector.<Token>;
 		protected var mPos:int;
 		protected var mLogLevel:int = LOG_NONE;
+		
+		protected var mUnresolvedBreaks:Vector.<UnresolvedJump> = new Vector.<UnresolvedJump>();
 		
 		public function Compiler() {
 			var mainFunc:ScriptFunction = new ScriptFunction();
@@ -50,7 +51,7 @@ package beef.script {
 			parseChunk();
 			
 			if ( hasMoreToken() ) {
-				error("不正なトークンを検知:" + getToken(0));
+				error("found invalid token:" + getToken(0));
 			}
 			
 			// dumpFunctions();
@@ -66,7 +67,7 @@ package beef.script {
 			addInstruction(Instruction.OPE_RETURN, 0, 0, 0);
 			var unresolved:Vector.<String> = stack.resolveGotoStatement();
 			for each( var label:String in unresolved ) {
-				error("ラベル[" + label + "]が定義されていません");
+				error("label[" + label + "] is not defined.");
 			}
 		}
 		
@@ -80,7 +81,7 @@ package beef.script {
 					} else if ( look(Token.TYPE_COMMA, 1) || look(Token.TYPE_EQUAL, 1) || look(Token.TYPE_PERIOD,1) || look(Token.TYPE_LBRACKET) ) {
 						parseAssignment(false);
 					} else {
-						error("構文エラー:" + currentToken);
+						error("syntax error:" + currentToken);
 						consume();
 					}
 				} else if ( look(Token.TYPE_LOCAL) ) {
@@ -102,6 +103,12 @@ package beef.script {
 				}
 			}
 			
+			if ( look(Token.TYPE_BREAK) ) {
+				consume();
+				var breakAddress:int = nextAddress;
+				var unresoleveBreak:Instruction = addInstruction(Instruction.OPE_JMP, 0, 0, 0);
+				mUnresolvedBreaks.push(new UnresolvedJump(unresoleveBreak, breakAddress));
+			}
 			if ( look(Token.TYPE_RETURN) ) {
 				parseReturnStatement();
 				while ( look(Token.TYPE_SEMICOLON) ) {
@@ -137,7 +144,7 @@ package beef.script {
 			
 			if ( !consume(Token.TYPE_EQUAL) ) {
 				if ( !newLocal ) {
-					error('代入文の形式に誤りがあります');
+					error('assignment statement syntax is incorrect.');
 					return;
 				}	
 			}
@@ -280,7 +287,7 @@ package beef.script {
 				stack.addUnresolevedGoto(label,addr,jmpIns);
 				consume();
 			} else {
-				error("GOTO文にラベルが指定されていません");
+				error("\'GOTO\'/ require label.");
 				consume();
 			}
 		}
@@ -298,7 +305,7 @@ package beef.script {
 				}
 			}
 			if ( !consume(Token.TYPE_RPARENT) ) {
-				error('引数リストの閉じ括弧が見つかりません');
+				error('not found right parent for argument list.');
 			}
 			return r;
 		}
@@ -320,7 +327,7 @@ package beef.script {
 				consume();
 				addInstruction(Instruction.OPE_TEST, base, 0, 1);
 				var jmp:Instruction = addInstruction(Instruction.OPE_JMP,0,0,0);
-				jmps.push(new UnresolvedJump(null, jmp, nextAddress));
+				jmps.push(new UnresolvedJump(jmp, nextAddress));
 				stack.freereg = base;
 				parseExpAnd();
 			}
@@ -338,7 +345,7 @@ package beef.script {
 				consume();
 				addInstruction(Instruction.OPE_TEST, base, 0, 0);
 				var jmp:Instruction = addInstruction(Instruction.OPE_JMP,0,0,0);
-				jmps.push(new UnresolvedJump(null, jmp, nextAddress));
+				jmps.push(new UnresolvedJump(jmp, nextAddress));
 				stack.freereg = base;
 				parseExpEqual();
 			}
@@ -472,7 +479,7 @@ package beef.script {
 				if ( look(Token.TYPE_RPARENT ) ) {
 					consume();
 				} else {
-					error("右括弧が見つからない");
+					error("not found right parent.");
 					hasError = true;
 				}
 			} else if ( look(Token.TYPE_LBRACE) ){
@@ -506,7 +513,7 @@ package beef.script {
 				addInstruction(Instruction.OPE_SETLIST, tableRegister, tableRegister, 1);
 				consume();	// right brace
 			} else {
-				error("式がない");
+				error("found syntax error");
 				hasError = true;
 			}
 			if ( !hasError ) {
@@ -539,7 +546,7 @@ package beef.script {
 				i = increg();
 				addInstruction(Instruction.OPE_LOADNIL, i, i, 0);
 			} else {
-				error("構文エラー");
+				error("found syntax error");
 			}
 			consume();
 			
@@ -595,10 +602,10 @@ package beef.script {
 				addLabel(getToken(0).token, nextAddress);
 				consume();
 			} else {
-				error("不正なラベル");
+				error("found invalid label");
 			}
 			if ( !consume(Token.TYPE_DCOLON) ) {
-				error("ラベルの構文に誤り");
+				error("incorrect label syntax");
 			}
 		}
 		
@@ -611,10 +618,10 @@ package beef.script {
 			if ( consume(Token.TYPE_LPARENT) ) {
 				params = parseParameterList();
 				if ( !consume(Token.TYPE_RPARENT) ) {
-					error('")"が見つかりません');
+					error('not found left parent');
 				}
 			} else {
-				error('functionに引数リストが見つかりません');
+				error('function require argument list.');
 			}
 			
 			var func:ScriptFunction = createFunction(funcName, params);
@@ -623,13 +630,13 @@ package beef.script {
 			parseBlock();
 			
 			if ( !consume(Token.TYPE_END) ) {
-				error('functionのendが見つかりません');		
+				error('not found \'end\' of function.');		
 			}
 			
 			addInstruction(Instruction.OPE_RETURN, 0, 0, 0);
 			var unresolved:Vector.<String> = stack.resolveGotoStatement();
 			for each( var label:String in unresolved ) {
-				error("ラベル[" + label + "]が定義されていません");
+				error("label[" + label + "] is not defined.");
 			}
 			mStack.pop();
 		}
@@ -678,7 +685,7 @@ package beef.script {
 					elseJmp = addInstruction(Instruction.OPE_JMP, 0, 0, 0);
 					elseAddress = nextAddress;
 					if ( !look(Token.TYPE_THEN) ) {
-						error("elseif に続く対応する then が見つかりません");
+						error("not found \'then\' of elseif statement.");
 						break;
 					}
 					consume();
@@ -700,7 +707,7 @@ package beef.script {
 				}
 				
 				if ( !consume(Token.TYPE_END) ) {
-					error('if文に対応するendが見つかりません');
+					error('not found \'end\' of if statement.');
 				}
 			}
 		}
@@ -720,10 +727,18 @@ package beef.script {
 				addInstruction(Instruction.OPE_JMP, testAddr - nextAddress, 0, 0);
 			}
 			jmpOpe.a = nextAddress - jmpAddr - 1;
+			resolveBreakStatements(nextAddress);
 			
 			if ( !consume(Token.TYPE_END) ) {
-				error('while文に対応するendが見つかりません');
+				error('not found \'end\' of while statement.');
 			}
+		}
+		
+		protected function resolveBreakStatements(toAddress:int):void {
+			for each ( var unresolved:UnresolvedJump in mUnresolvedBreaks ) {
+				unresolved.inst.a = toAddress - unresolved.address - 1;
+			}
+			mUnresolvedBreaks = new Vector.<UnresolvedJump>();
 		}
 		
 		protected function addInstruction(op:int, a:int, b:int, c:int):Instruction {

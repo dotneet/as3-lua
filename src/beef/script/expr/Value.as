@@ -1,16 +1,14 @@
 package beef.script.expr {
-	/**
-	 * @author shinji
-	 */
+	
 	public class Value {
 		public function asBoolean():BooleanValue {
-			throw new Error("asBoolean()が実装されていません");
+			throw new Error("asBoolean() is not implemented.");
 		}
 		public function asNumber():NumberValue {
-			throw new Error("asNumber()が実装されていません");
+			throw new Error("asNumber() is not implemented.");
 		}
 		public function asString():StringValue {
-			throw new Error("asString()が実装されていません");
+			throw new Error("asString() is not implemented.");
 		}
 	}
 }

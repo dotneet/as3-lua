@@ -3,9 +3,6 @@ package beef.script.sysfunc {
 	import beef.script.expr.BooleanValue;
 	import beef.script.expr.Value;
 
-	/**
-	 * @author shinji
-	 */
 	public class PrintFunction extends SystemFunction {
 		public function PrintFunction() {
 			super();

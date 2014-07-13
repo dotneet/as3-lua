@@ -1,8 +1,6 @@
 package beef.script.event {
 	import flash.events.Event;
-	/**
-	 * @author shinji
-	 */
+	
 	public class ScriptEvent extends Event {
 		public static const RUNTIME_ERROR:String = 'runtime_error';
 		public static const RUN:String = 'run';
