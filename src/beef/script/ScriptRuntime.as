@@ -233,7 +233,7 @@ package beef.script {
 				case Instruction.OPE_CONCAT:
 					throw new ScriptError('unsupported operation.');
 				case Instruction.OPE_JMP:
-					frame.pc += ope.a;
+					frame.pc += ope.b;
 					break;
 				case Instruction.OPE_EQ:
                 case Instruction.OPE_LT:

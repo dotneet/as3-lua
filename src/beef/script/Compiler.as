@@ -338,7 +338,7 @@ package beef.script {
 			}
 			var addr:int = nextAddress;
 			for each ( var uj:UnresolvedJump in jmps ) {
-				uj.inst.a = addr - uj.address;
+				uj.inst.b = addr - uj.address;
 			}
 		}
 		
@@ -356,7 +356,7 @@ package beef.script {
 			}
 			var addr:int = nextAddress;
 			for each ( var uj:UnresolvedJump in jmps ) {
-				uj.inst.a = addr - uj.address;
+				uj.inst.b = addr - uj.address;
 			}
 		}
 		
@@ -372,7 +372,7 @@ package beef.script {
 				} else if ( type == Token.TYPE_TILDA_EQUAL ) {
 					addInstruction(Instruction.OPE_EQ, 0, base, base + 1);
 				}
-				addInstruction(Instruction.OPE_JMP, 1, 0, 0);
+				addInstruction(Instruction.OPE_JMP, 0, 1, 0);
 				addInstruction(Instruction.OPE_LOADBOOL, base, 0, 1);
 				addInstruction(Instruction.OPE_LOADBOOL, base, 1, 0);
 				stack.freereg = base + 1;
@@ -395,7 +395,7 @@ package beef.script {
 				} else if ( type == Token.TYPE_GREAT_EQUAL ) {
 					addInstruction(Instruction.OPE_LE, 1, base + 1, base);
 				}
-				addInstruction(Instruction.OPE_JMP, 1, 0, 0);
+				addInstruction(Instruction.OPE_JMP, 0, 1, 0);
 				addInstruction(Instruction.OPE_LOADBOOL, base, 0, 1);
 				addInstruction(Instruction.OPE_LOADBOOL, base, 1, 0);
 				stack.freereg = base + 1;
@@ -670,7 +670,7 @@ package beef.script {
 			var elseJmp:Instruction = addInstruction(Instruction.OPE_JMP, 0, 0, 0);
 			var elseAddress:int = nextAddress;
 			var thenJmp:Instruction;
-			var thenJmps:Array = [];
+			var thenJmps:Vector.<UnresolvedJump> = new Vector.<UnresolvedJump>();
 			if ( look(Token.TYPE_THEN) ) {
 				consume();
 				parseBlock();
@@ -679,9 +679,9 @@ package beef.script {
 					consume();
 					
 					thenJmp = addInstruction(Instruction.OPE_JMP, 0, 0, 0);
-					thenJmps.push({jmp:thenJmp, address: nextAddress});
+					thenJmps.push(new UnresolvedJump(thenJmp, nextAddress - 1));
 					
-					elseJmp.a = nextAddress - elseAddress;
+					elseJmp.b = nextAddress - elseAddress;
 					
 					r0 = stack.freereg;
 					parseExp();
@@ -699,16 +699,16 @@ package beef.script {
 				
 				if ( look(Token.TYPE_ELSE) ) {
 					thenJmp = addInstruction(Instruction.OPE_JMP, 0, 0, 0);
-					thenJmps.push({jmp:thenJmp, address: nextAddress});
+					thenJmps.push(new UnresolvedJump(thenJmp, nextAddress - 1));
 					
-					elseJmp.a = nextAddress - elseAddress;
+					elseJmp.b = nextAddress - elseAddress;
 					consume();
 					parseBlock();
 				} else {
-					elseJmp.a = nextAddress - elseAddress;
+					elseJmp.b = nextAddress - elseAddress;
 				}
-				for each ( var jmp:Object in thenJmps ) {
-					jmp.jmp.a = nextAddress - jmp.address;
+				for each ( var jmp:UnresolvedJump in thenJmps ) {
+					jmp.inst.b = nextAddress - jmp.address - 1;
 				}
 				
 				if ( !consume(Token.TYPE_END) ) {
@@ -722,16 +722,15 @@ package beef.script {
 			var base:int = stack.freereg;
 			var testAddr:int = nextAddress;
 			parseExp();
-			stack.freereg = base;
 			addInstruction(Instruction.OPE_TEST, base, 0, 0);
 			var jmpAddr:int = nextAddress;
 			var jmpOpe:Instruction = addInstruction(Instruction.OPE_JMP, 0, 0, 0);
 			if ( look(Token.TYPE_DO) ) {
 				consume();
 				parseBlock();
-				addInstruction(Instruction.OPE_JMP, testAddr - nextAddress, 0, 0);
+				addInstruction(Instruction.OPE_JMP, 0, testAddr - nextAddress - 1, 0);
 			}
-			jmpOpe.a = nextAddress - jmpAddr - 1;
+			jmpOpe.b = nextAddress - jmpAddr - 1;
 			resolveBreakStatements(nextAddress);
 			
 			if ( !consume(Token.TYPE_END) ) {
@@ -784,7 +783,7 @@ package beef.script {
 		
 		protected function resolveBreakStatements(toAddress:int):void {
 			for each ( var unresolved:UnresolvedJump in mUnresolvedBreaks ) {
-				unresolved.inst.a = toAddress - unresolved.address - 1;
+				unresolved.inst.b = toAddress - unresolved.address - 1;
 			}
 			mUnresolvedBreaks = new Vector.<UnresolvedJump>();
 		}
