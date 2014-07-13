@@ -105,6 +105,9 @@ package beef.script {
 			throw new Error("call()が実装されていません");
 		}
 		
+		public function get lastreg():int {
+			return mFreereg - 1;
+		}
 		public function get freereg():int {
 			return mFreereg;
 		}

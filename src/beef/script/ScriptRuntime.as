@@ -303,6 +303,31 @@ package beef.script {
 					table = frame.register[ope.a] as TableValue;
 					table.setValue(resolveRK(frame, ope.b), resolveRK(frame, ope.c));
 					break;
+				case Instruction.OPE_FORPREP:
+					var prepNumber1:NumberValue = frame.register[ope.a] as NumberValue;
+					var prepNumber2:NumberValue = frame.register[ope.a + 2] as NumberValue;
+					frame.register[ope.a] = new NumberValue(prepNumber1.value - prepNumber2.value);
+					frame.pc += ope.b;
+					break;
+				case Instruction.OPE_FORLOOP:
+					var forloopNumber1:NumberValue = frame.register[ope.a] as NumberValue;
+					var forloopNumber2:NumberValue = frame.register[ope.a + 1] as NumberValue;
+					var forloopNumber3:NumberValue = frame.register[ope.a + 2] as NumberValue;
+					var forloopNewValue:NumberValue = new NumberValue(forloopNumber1.value + forloopNumber3.value);
+					frame.register[ope.a] = forloopNewValue;
+					if ( forloopNumber3.value > 0 ) {
+						if ( forloopNewValue.value <= forloopNumber2.value ) {
+							frame.pc += ope.b;
+							frame.register[ope.a + 3] = frame.register[ope.a];
+						}
+					} else if ( forloopNumber3.value < 0 ) {
+						if ( forloopNewValue.value >= forloopNumber2.value ) {
+							frame.pc += ope.b;
+							frame.register[ope.a + 3] = frame.register[ope.a];
+						}
+					}
+					
+					break;
 				default:
 					throw new ScriptError('Undefined Instruction: OPE=' + ope.op);
 			}

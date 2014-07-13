@@ -1,5 +1,4 @@
 package unittest {
-	import air.update.utils.FileUtils;
 	import beef.script.Compiler;
 	import beef.script.ScriptFunction;
 	import beef.script.ScriptRuntime;
@@ -70,6 +69,12 @@ package unittest {
 			Assert.assertEquals(10, execAndPrint("a = 1; b = 1; while a < 5 or b < 10 do a = a + 1; b = b + 1 end", "a"));
 			// break
 			Assert.assertEquals(3, execAndPrint("a = 1; while a < 5 do if a == 3 then break end a = a + 1 end", "a"));
+		}
+		
+		[Test]
+		public function forStatement():void {
+			Assert.assertEquals("123", execAndPrint("a = 1; for i = 1,3 do print(i) end", "''"));
+			Assert.assertEquals(10, execAndPrint("a = 1; for i = 0,10,2 do a = i end", "a"));
 		}
 		
 		[Test]

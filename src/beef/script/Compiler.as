@@ -54,7 +54,6 @@ package beef.script {
 				error("found invalid token:" + getToken(0));
 			}
 			
-			// dumpFunctions();
 			return stack;
 		}
 		
@@ -74,11 +73,16 @@ package beef.script {
 		protected function parseBlock():void {
 			log("parseBlock");
 			stack.pushLocalScope();
+			parseBlockWithoutNewStack();
+			stack.popLocalScope();
+		}
+		
+		protected function parseBlockWithoutNewStack() : void {
 			while ( true ) {
 				if ( look(Token.TYPE_IDENT) ) {
-					if ( look(Token.TYPE_LPARENT,1) ) {
+					if ( look(Token.TYPE_LPARENT, 1) ) {
 						parseFuncCall();
-					} else if ( look(Token.TYPE_COMMA, 1) || look(Token.TYPE_EQUAL, 1) || look(Token.TYPE_PERIOD,1) || look(Token.TYPE_LBRACKET) ) {
+					} else if ( look(Token.TYPE_COMMA, 1) || look(Token.TYPE_EQUAL, 1) || look(Token.TYPE_PERIOD, 1) || look(Token.TYPE_LBRACKET) ) {
 						parseAssignment(false);
 					} else {
 						error("syntax error:" + currentToken);
@@ -96,6 +100,8 @@ package beef.script {
 					parseIfStatement();
 				} else if ( look(Token.TYPE_WHILE) ) {
 					parseWhileStatement();
+				} else if ( look(Token.TYPE_FOR) ) {
+					parseForStatement();
 				} else if ( look(Token.TYPE_SEMICOLON) ) {
 					consume();
 				} else {
@@ -115,7 +121,6 @@ package beef.script {
 					consume();
 				}
 			}
-			stack.popLocalScope();
 		}
 		
 		protected function parseReturnStatement():void {
@@ -714,11 +719,11 @@ package beef.script {
 		
 		protected function parseWhileStatement():void {
 			consume(Token.TYPE_WHILE);
-			var r0:int = stack.freereg;
+			var base:int = stack.freereg;
 			var testAddr:int = nextAddress;
 			parseExp();
-			stack.freereg = r0;			
-			addInstruction(Instruction.OPE_TEST, r0, 0, 0);
+			stack.freereg = base;
+			addInstruction(Instruction.OPE_TEST, base, 0, 0);
 			var jmpAddr:int = nextAddress;
 			var jmpOpe:Instruction = addInstruction(Instruction.OPE_JMP, 0, 0, 0);
 			if ( look(Token.TYPE_DO) ) {
@@ -732,6 +737,49 @@ package beef.script {
 			if ( !consume(Token.TYPE_END) ) {
 				error('not found \'end\' of while statement.');
 			}
+			stack.freereg = base;
+		}
+		
+		protected function parseForStatement():void {
+			consume(Token.TYPE_FOR);
+			var base:int = stack.freereg;
+			if ( look(Token.TYPE_IDENT) && look(Token.TYPE_EQUAL,1) ) {
+				var name:String = getToken(0).token;
+				consume();
+				consume();
+				
+				var indexRegister:int = stack.freereg;
+				parseExp();	// for index
+				if ( !consume(Token.TYPE_COMMA) ) {
+					error('syntx error: for statment incorrect');
+				}
+				parseExp();	// for limit
+				if ( consume(Token.TYPE_COMMA) ) {
+					parseExp();	// for step
+				} else {
+					var stepConst:int = addConst(new NumberValue(1));
+					addInstruction(Instruction.OPE_LOADK, increg(), stepConst, 0);
+				}
+				if ( consume(Token.TYPE_DO) ) {
+					stack.pushLocalScope();
+					addLocal(name);
+					var prepAddress:int = nextAddress;
+					var prepInst:Instruction = addInstruction(Instruction.OPE_FORPREP, indexRegister, 0, 0);
+					parseBlockWithoutNewStack();
+					prepInst.b = nextAddress - prepAddress - 1;
+					addInstruction(Instruction.OPE_FORLOOP, indexRegister, prepAddress - nextAddress, 0);
+					stack.popLocalScope();
+					if ( !consume(Token.TYPE_END) ) {
+						error("not found 'end' of for-statement");
+					}
+				} else {
+					error("not found 'do' keywrod in for-statement");
+				}
+				
+			} else {
+				error('for-in statment not implemented.');
+			}
+			stack.freereg = base;
 		}
 		
 		protected function resolveBreakStatements(toAddress:int):void {
@@ -823,7 +871,7 @@ package beef.script {
 			return LuaConstants.MAX_STACK + constIdx;
 		}
 		
-		private function dumpFunctions():void {
+		public function dumpLastResult():void {
 			stack.dump();
 			for each ( var fn:ScriptFunction in stack.functions ) {
 				fn.dump();
