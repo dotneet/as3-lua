@@ -13,7 +13,7 @@ Beef intended to used as game script.
  - Metatable
  - Coroutines
  - almost standard function.
- - for,repeate statment.
+ - for-in,repeate statment.
 
 ## Code Example.
 
