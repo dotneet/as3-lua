@@ -1,4 +1,5 @@
 package beef.script {
+	import flash.utils.getQualifiedClassName;
 	import beef.script.expr.BooleanValue;
 	import beef.script.expr.NumberValue;
 	import beef.script.expr.StringValue;
@@ -63,7 +64,7 @@ package beef.script {
 		}
 		
 		public function addConst(value:Value):uint {
-			return mConsts.push(value);
+			return mConsts.push(value) - 1;
 		}
 		
 		public function addLabel(name:String, addr:int):void {
@@ -92,6 +93,17 @@ package beef.script {
 		
 		public function getConst(i:int):Value {
 			return mConsts[i];
+		}
+		public function findConst(v:Value):int {
+			for ( var i:int = 0; i < mConsts.length; i++ ) {
+				var c:Value = mConsts[i];
+				if ( flash.utils.getQualifiedClassName(c) == flash.utils.getQualifiedClassName(v) ) {
+					if ( c.asString().value == v.asString().value ) {
+						return i;
+					}
+				}
+			}
+			return -1;
 		}
 		
 		public function get instructions():Vector.<Instruction> {
@@ -150,18 +162,32 @@ package beef.script {
 		}
 		
 		public function dump():void {
+			trace(dumpStr());
+		}
+		
+		public function dumpStr(depth:int=0):String {
 			var s:String = '';
 			var idx:String;
+			var depthSpace:String = '';
+			for ( var i:int = 0; i < depth; i++ ) {
+				depthSpace += '    ';
+			}
 			for ( idx in mLocals ) {
-				s += ".local " + mLocals[idx] + " : " + idx + "\n";
+				s += depthSpace + ".local " + mLocals[idx] + " : " + idx + "\n";
 			}
 			for ( idx in mConsts ) {
-				s += ".const " + mConsts[idx] + " : " + idx + "\n";
+				s += depthSpace + ".const " + mConsts[idx] + " : " + idx + "\n";
 			}
 			for ( idx in mInstructions ) {
-				s += idx + "  " + mInstructions[idx] + "\n";
+				s += depthSpace + idx + "  " + mInstructions[idx] + "\n";
 			}
-			trace(s);
+			for ( var name:String in mFunctions ) {
+				s += "\n";
+				var f:ScriptFunction = mFunctions[name];
+				s += depthSpace + "*FUNCTION:" + name + "\n";
+				s += f.dumpStr(depth+1);
+			}
+			return s;
 		}
 	}
 

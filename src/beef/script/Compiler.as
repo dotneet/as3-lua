@@ -270,13 +270,13 @@ package beef.script {
 			
 			var commandName:String = getToken(0).token;
 			var idx:int = addConst(new StringValue(commandName));
-			var funcReg:int = increg();
 			var base:int = freereg();
+			var funcReg:int = increg();
 			consume();
 			parseArgs();
 			var paramNums:int = freereg() - base;
 			addInstruction(Instruction.OPE_GETGLOBAL, funcReg, idx, 0);
-			addInstruction(Instruction.OPE_CALL, funcReg, paramNums + 1, 0);
+			addInstruction(Instruction.OPE_CALL, funcReg, paramNums, 0);
 			stack.freereg = base;
 		}
 		
@@ -790,7 +790,7 @@ package beef.script {
 		
 		protected function addInstruction(op:int, a:int, b:int, c:int):Instruction {
 			var inst:Instruction = new Instruction(op, a, b, c);
-			mStack[mStack.length - 1].addInstruction(inst);
+			stack.addInstruction(inst);
 			return inst;
 		}
 		protected function createFunction(name:String,params:Vector.<String>):ScriptFunction {
@@ -799,10 +799,14 @@ package beef.script {
 			return fn;
 		}
 		protected function addConst(value:Value):int {
-			return mStack[mStack.length - 1].addConst(value) - 1;
+			var idx:int = stack.findConst(value);
+			if ( idx == -1 ) {
+				return stack.addConst(value);
+			}
+			return idx;
 		}
 		protected function addLocal(name:String):int {
-			return mStack[mStack.length - 1].addLocal(name) - 1;
+			return stack.addLocal(name) - 1;
 		}
 		protected function addLabel(name:String, addr:int):void {
 			stack.addLabel(name, addr);
