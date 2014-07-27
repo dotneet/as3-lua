@@ -273,10 +273,9 @@ package beef.script {
 			var base:int = freereg();
 			var funcReg:int = increg();
 			consume();
-			parseArgs();
-			var paramNums:int = freereg() - base;
+			var paramNums:int = parseArgs();
 			addInstruction(Instruction.OPE_GETGLOBAL, funcReg, idx, 0);
-			addInstruction(Instruction.OPE_CALL, funcReg, paramNums, 0);
+			addInstruction(Instruction.OPE_CALL, funcReg, paramNums + 1, 0);
 			stack.freereg = base;
 		}
 		
@@ -298,10 +297,11 @@ package beef.script {
 		}
 		
 		// (数値|文字列) { ',' ... }
-		protected function parseArgs():Vector.<Value> {
+		protected function parseArgs():Number {
 			consume(); // '('
-			var r:Vector.<Value> = new Vector.<Value>();
+			var r:Number = 0;
 			while ( currentToken.isLiteralOrIdent() ) {
+				r++;
 				parseExp();
 				if ( look(Token.TYPE_COMMA) ) {
 					consume();
