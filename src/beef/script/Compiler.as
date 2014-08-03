@@ -584,14 +584,6 @@ package beef.script {
 				consume();
 				var expReg:int = freereg();
 				parseExp();
-				var localIdx : int = stack.findLocal(name);
-				if ( localIdx != -1 ) {
-					addInstruction(Instruction.OPE_MOVE, increg(), localIdx, 0);
-				} else {
-					var i : int = addConst(new StringValue(name));
-					var r : int = increg();
-					addInstruction(Instruction.OPE_GETGLOBAL, r, i, 0);
-				}
 				addInstruction(Instruction.OPE_GETTABLE, valueReg, valueReg, expReg);
 				consume(Token.TYPE_RBRACKET);
 				stack.freereg = expReg;
@@ -799,6 +791,9 @@ package beef.script {
 			return fn;
 		}
 		protected function addConst(value:Value):int {
+			if ( value == null || value.asString().value == "null" || value.asString().value == null ) {
+				trace("a");
+			}
 			var idx:int = stack.findConst(value);
 			if ( idx == -1 ) {
 				return stack.addConst(value);

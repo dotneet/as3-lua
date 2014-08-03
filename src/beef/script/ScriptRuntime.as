@@ -195,9 +195,14 @@ package beef.script {
                     }
 					break;
 				case Instruction.OPE_GETGLOBAL:
+				{
 					name = frame.func.getConst(ope.b) as StringValue;
+					if ( !mGlobals.hasOwnProperty(name.value) ) {
+						throw new ScriptError("global variable '" + name.value + "' is not defined.");
+					}
 					frame.register[ope.a] = mGlobals[name.value];
 					break;
+				}
 				case Instruction.OPE_SETGLOBAL:
 					name = frame.func.getConst(ope.b) as StringValue;
 					mGlobals[name.value] = frame.register[ope.a] == null ? NilValue.INSTANCE : frame.register[ope.a];
