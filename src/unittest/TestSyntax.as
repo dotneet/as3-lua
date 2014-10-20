@@ -96,6 +96,13 @@ package unittest {
 		}
 		
 		[Test]
+		public function concatStr() : void {
+			Assert.assertEquals("aabb", execAndPrint("a='aa'..'bb'", "a"));
+			Assert.assertEquals("aabb12", execAndPrint("a='aa'..'bb'..12", "a"));
+			Assert.assertEquals("110", execAndPrint("a=1..0*1..1", "a"));
+		}
+		
+		[Test]
 		public function returnStatement() : void {
 			Assert.assertEquals("10", execAndPrint("function f() return 10; end; local a = f();", "a"));
 			Assert.assertEquals("1", execAndPrint("function f() return 1,2,3; end; local a,b,c = f();", "a"));

@@ -74,7 +74,20 @@ package beef.script {
 					c = next();
 					break;
 				case (c === ','): push(Token.TYPE_COMMA, ','); c = next(); break;
-				case (c === '.'): push(Token.TYPE_PERIOD, '.'); c = next(); break;
+				case (c === '.'): 
+					c = next();
+					if ( c === '.' ) {
+						c = next();
+						if ( c === '.' ) {
+							push(Token.TYPE_TPERIOD, '...');
+							c = next();
+						} else {
+							push(Token.TYPE_DPERIOD, '..');
+						}
+					} else {
+						push(Token.TYPE_PERIOD, '.');
+					}
+					break;
 				case (c === ':'):
 					c = next();
 					if ( c === ':' ) {
@@ -208,14 +221,27 @@ package beef.script {
 						c = next();
 					}
 					if ( c == '.' ) {
-						token += c;
 						c = next();
-						while ( !isNaN(parseInt(c)) ) {
-							token += c;
+						if ( c == '.' ) {
+							push(Token.TYPE_NUMBER, token);
 							c = next();
+							if ( c == '.' ) {
+								push(Token.TYPE_TPERIOD, '..');
+								c = next();
+							} else {
+								push(Token.TYPE_DPERIOD, '..');
+							}
+						} else {
+							token += c;
+							while ( !isNaN(parseInt(c)) ) {
+								token += c;
+								c = next();
+							}
+							push(Token.TYPE_NUMBER, token);
 						}
+					} else {
+						push(Token.TYPE_NUMBER, token);
 					}
-					push(Token.TYPE_NUMBER, token);
 					break;
 				case (isWord(c)):
 					c = next();

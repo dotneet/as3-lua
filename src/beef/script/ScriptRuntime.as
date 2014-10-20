@@ -235,8 +235,14 @@ package beef.script {
 					frame.register[ope.a] = new BooleanValue(!resolveRK(frame, ope.b).asBoolean().value);
 					break;
 				case Instruction.OPE_LEN:
-				case Instruction.OPE_CONCAT:
 					throw new ScriptError('unsupported operation.');
+				case Instruction.OPE_CONCAT:
+					var concatResult:String = "";
+					for ( var concatIdx:int = ope.b; concatIdx <= ope.c; concatIdx++ ) {
+						concatResult += frame.register[concatIdx].asString().value;
+					}
+					frame.register[ope.a] = new StringValue(concatResult);
+					break;
 				case Instruction.OPE_JMP:
 					frame.pc += ope.b;
 					break;

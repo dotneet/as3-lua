@@ -438,7 +438,7 @@ package beef.script {
 		protected function parseExpModePow():void {
 			var base:int = freereg();
 			parseExpUnary();
-			while ( look(Token.TYPE_PERCENT) || look(Token.TYPE_CARET) ) {
+			while ( look(Token.TYPE_PERCENT) || look(Token.TYPE_CARET) || look(Token.TYPE_DPERIOD) ) {
 				var type:int = getToken(0).type;
 				consume();
 				parseExpUnary();
@@ -446,8 +446,25 @@ package beef.script {
 					addInstruction(Instruction.OPE_MOD, base, base, base + 1);
 				} else if ( type == Token.TYPE_CARET ) {
 					addInstruction(Instruction.OPE_POW, base, base, base + 1);
+				} else if ( type == Token.TYPE_DPERIOD ) {
+					addInstruction(Instruction.OPE_CONCAT, base, base, base + 1);
 				}
 				stack.freereg = base + 1;
+			}
+		}
+		
+		protected function parseExpConcat():void {
+			var base:int = freereg();
+			parseExpUnary();
+			var concatCount:int = 0;
+			while ( look(Token.TYPE_DPERIOD) ) {
+				consume();
+				parseExpUnary();
+				concatCount++;
+			}
+			if ( concatCount > 0 ) {
+				addInstruction(Instruction.OPE_CONCAT, base, base, base + concatCount);
+				//stack.freereg = base + 1;
 			}
 		}
 		
