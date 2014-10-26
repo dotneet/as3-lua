@@ -209,6 +209,7 @@ package beef.script {
 							c = next();
 						} while ( c != ']' && c !== '' );
 						push(Token.TYPE_STRING, str);
+						c = next();
 					}
 					break;
 				case (c ===']'): push(Token.TYPE_RBRACKET, ']'); c = next(); break;
