@@ -53,5 +53,13 @@ package beef.script.expr {
 		public override function asString():StringValue {
 			return new StringValue("table");
 		}
+		
+		public override function asBoolean():BooleanValue {
+			return BooleanValue.TRUE;
+		}
+		
+		public override function asNumber():NumberValue {
+			return new NumberValue(NaN);
+		}
 	}
 }

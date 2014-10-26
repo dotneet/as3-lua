@@ -10,7 +10,7 @@ package beef.script.expr {
 			return mValue;
 		}
 		public override function asBoolean():BooleanValue {
-			return ( mValue ) ? BooleanValue.TRUE : BooleanValue.FALSE;
+			return BooleanValue.TRUE;
 		}
 		public override function asNumber():NumberValue {
 			return this;

@@ -232,7 +232,7 @@ package beef.script {
 								push(Token.TYPE_DPERIOD, '..');
 							}
 						} else {
-							token += c;
+							token += '.';
 							while ( !isNaN(parseInt(c)) ) {
 								token += c;
 								c = next();

@@ -91,8 +91,9 @@ package unittest {
 		public function unaryOperator() : void {
 			Assert.assertEquals("true", execLiner("not false"));
 			Assert.assertEquals("false", execLiner("not true"));
+			Assert.assertEquals("true", execLiner("not nil"));
 			Assert.assertEquals("false", execLiner("not 1"));
-			Assert.assertEquals("true", execLiner("not 0"));
+			Assert.assertEquals("false", execLiner("not 0"));
 		}
 		
 		[Test]
