@@ -136,6 +136,18 @@ package unittest {
 			Assert.assertEquals("5", execAndPrint("a = {1,b={c=5},3}", "a.b.c"));
 			
 			Assert.assertEquals("10", execAndPrint("a = {}; a.b = 10", "a.b"));
+			var script:String = "function f1() return 0; end;" +
+			"local f2 = function(p) " +
+			"  local attr=\"b\"; " +
+			"  local value=\"v\"; " +
+			"  a = {}; " +
+			"  a[attr] = value" +
+			"  return value;" +
+			"end; " +
+			"r = f2(10)";
+			var compiler:Compiler = new Compiler();
+			compiler.parse(script).dump();
+			Assert.assertEquals("v", execAndPrint(script,"r"));
 			Assert.assertEquals("10", execAndPrint("local a = {}; a.b = 10", "a.b"));
 			Assert.assertEquals("nil", execAndPrint("local a = {}; a.b = 10", "a.c"));
 		}
@@ -145,6 +157,8 @@ package unittest {
 			Assert.assertEquals("10", execAndPrint("function f() return 10; end;local a = f()", "a"));
 			Assert.assertEquals("11", execAndPrint("function f(a) return a; end;local a = f(11)", "a"));
 			Assert.assertEquals("12", execAndPrint("function f() return 12; end; function p(a) return a; end; local a = p(f())", "a"));
+			
+			Assert.assertEquals("10", execAndPrint("function f(a) return a*a; end;f(2); local i = 10; f(2); i = i", "i"));
 		}
 	}
 }

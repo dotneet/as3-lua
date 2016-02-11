@@ -82,7 +82,9 @@ package beef.script {
 			while ( true ) {
 				if ( look(Token.TYPE_IDENT) ) {
 					if ( look(Token.TYPE_LPARENT, 1) ) {
+						var funcCallBase:int = freereg()
 						parseFuncCall();
+						stack.freereg = funcCallBase;
 					} else if ( look(Token.TYPE_COMMA, 1) || look(Token.TYPE_EQUAL, 1) || look(Token.TYPE_PERIOD, 1) || look(Token.TYPE_LBRACKET, 1) ) {
 						parseAssignment(false);
 					} else {
@@ -215,10 +217,9 @@ package beef.script {
 					var tmpRegister:int = 0;
 					if ( register == -1 ) {
 						var gblNameIdx:int = addConst(new StringValue(name));
-						var nameRegister:int = freereg();
 						addInstruction(Instruction.OPE_LOADK, increg(), gblNameIdx, 0);
 						register = freereg();
-						addInstruction(Instruction.OPE_GETGLOBAL, increg(), nameRegister, 0);
+						addInstruction(Instruction.OPE_GETGLOBAL, increg(), gblNameIdx, 0);
 					}
 					while ( look(Token.TYPE_PERIOD) || look(Token.TYPE_LBRACKET) ) {
 						if ( look(Token.TYPE_PERIOD) ) {
