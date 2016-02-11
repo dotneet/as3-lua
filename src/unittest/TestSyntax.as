@@ -54,6 +54,20 @@ package unittest {
 			Assert.assertEquals("nil", execAndPrint("local a,b,c = 1", "b"));
 			Assert.assertEquals(1, execAndPrint("local a = 1,2,3", "a"));
 			Assert.assertEquals(2, execAndPrint("local a = 1; a = 2", "a"));
+			
+			Assert.assertEquals(3, execAndPrint("local a = 1; a = a + 2", "a"));
+			Assert.assertEquals("aa", execAndPrint("a = \"a\"; a = a .. a", "a"));
+		}
+		
+		[Test]
+		public function lambda() : void {
+			Assert.assertEquals(100, execAndPrint("f = function(n) return n * n; end; b = f(10)", "b"));
+			
+			var script:String = 
+				"local f = function(x) local y = x * x; return y; end; " +
+				"local r = f(2)";
+			Assert.assertEquals(4, execAndPrint(script, "r"));
+				
 		}
 		
 		[Test]
@@ -105,7 +119,7 @@ package unittest {
 		
 		[Test]
 		public function returnStatement() : void {
-			Assert.assertEquals("10", execAndPrint("function f() return 10; end; local a = f();", "a"));
+			Assert.assertEquals("2", execAndPrint("function f(x) local r = x + x; return r; end; local a = f(1);", "a"));
 			Assert.assertEquals("1", execAndPrint("function f() return 1,2,3; end; local a,b,c = f();", "a"));
 			Assert.assertEquals("2", execAndPrint("function f() return 1,2,3; end; local a,b,c = f();", "b"));
 			Assert.assertEquals("3", execAndPrint("function f() return 1,2,3; end; local a,b,c = f();", "c"));

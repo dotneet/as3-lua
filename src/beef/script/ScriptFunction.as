@@ -193,6 +193,14 @@ package beef.script {
 				s += depthSpace + "*FUNCTION:" + name + "\n";
 				s += f.dumpStr(depth+1);
 			}
+			for ( idx in mConsts ) {
+				if ( mConsts[idx] is ScriptFunction ) {
+					
+					var sf:ScriptFunction = mConsts[idx] as ScriptFunction;
+					s += "*Lambda Function:" + sf.asString().toString() + "\n";
+					s += sf.dumpStr(depth+1);
+				}
+			}
 			return s;
 		}
 	}

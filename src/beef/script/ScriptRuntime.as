@@ -291,7 +291,7 @@ package beef.script {
 					var finishedFrame:Frame = frame;
 	                frame = (mStack[mStack.length - 1] as Frame);
 	                
-	                for(var regpos : uint = finishedFrame.returnRegister;regpos < finishedFrame.returnRegister + returns.length; regpos++) {
+	                for(var regpos : uint = finishedFrame.returnRegister; regpos < finishedFrame.returnRegister + returns.length; regpos++) {
 						frame.register[regpos] = returns[regpos - finishedFrame.returnRegister];
 	                }
 					return;

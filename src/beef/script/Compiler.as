@@ -273,15 +273,21 @@ package beef.script {
 		protected function parseFuncCall():void {
 			log("parseFuncCall");
 			
-			var commandName:String = getToken(0).token;
-			var idx:int = addConst(new StringValue(commandName));
-			var base:int = freereg();
-			var funcReg:int = increg();
+			var funcName:String = getToken(0).token;
 			consume();
+			var funcReg:int = increg();
+			
+			var localIdx:int = stack.findLocal(funcName);
+			if ( localIdx != -1 ) {
+				addInstruction(Instruction.OPE_MOVE, funcReg, localIdx, 0);
+			} else {
+				var idx:int = addConst(new StringValue(funcName));
+				addInstruction(Instruction.OPE_GETGLOBAL, funcReg, idx, 0);
+			}
+			
 			var paramNums:int = parseArgs();
-			addInstruction(Instruction.OPE_GETGLOBAL, funcReg, idx, 0);
+			// ope.a = 戻り値格納レジスタ, ope.b = パラメータ数+1
 			addInstruction(Instruction.OPE_CALL, funcReg, paramNums + 1, 0);
-			stack.freereg = base;
 		}
 		
 		// 'GOTO' + 識別子
