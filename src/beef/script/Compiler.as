@@ -21,6 +21,7 @@ package beef.script {
 		protected var mTokens:Vector.<Token>;
 		protected var mPos:int;
 		protected var mLogLevel:int = LOG_NONE;
+		protected var mFuncSeqNum:int = 1;
 		
 		protected var mUnresolvedBreaks:Vector.<UnresolvedJump> = new Vector.<UnresolvedJump>();
 		
@@ -82,7 +83,7 @@ package beef.script {
 				if ( look(Token.TYPE_IDENT) ) {
 					if ( look(Token.TYPE_LPARENT, 1) ) {
 						parseFuncCall();
-					} else if ( look(Token.TYPE_COMMA, 1) || look(Token.TYPE_EQUAL, 1) || look(Token.TYPE_PERIOD, 1) || look(Token.TYPE_LBRACKET) ) {
+					} else if ( look(Token.TYPE_COMMA, 1) || look(Token.TYPE_EQUAL, 1) || look(Token.TYPE_PERIOD, 1) || look(Token.TYPE_LBRACKET, 1) ) {
 						parseAssignment(false);
 					} else {
 						error("syntax error:" + currentToken);
@@ -91,7 +92,7 @@ package beef.script {
 				} else if ( look(Token.TYPE_LOCAL) ) {
 					parseDefLocal();
 				} else if ( look(Token.TYPE_FUNCTION) ) {
-					parseFunction();
+					parseFunction(true);
 				} else if ( look(Token.TYPE_DCOLON) ) {
 					parseLabel();
 				} else if ( look(Token.TYPE_GOTO) ) {
@@ -132,7 +133,11 @@ package beef.script {
 		
 		protected function parseExpList():int {
 			var expCount:int = 0;
-			while ( currentToken.isLiteralOrIdent() || currentToken.isUnaryOperator() || look(Token.TYPE_LPARENT) || look(Token.TYPE_LBRACE) ) {
+			while ( currentToken.isLiteralOrIdent() || 
+					currentToken.isUnaryOperator() ||
+					look(Token.TYPE_FUNCTION) ||
+					look(Token.TYPE_LPARENT) || 
+					look(Token.TYPE_LBRACE) ) {
 				expCount++;
 				parseExp();
 				if ( look(Token.TYPE_COMMA) ) {
@@ -495,6 +500,8 @@ package beef.script {
 				} else {
 					parseVar();
 				}
+			} else if ( look(Token.TYPE_FUNCTION) ) {
+				parseFunction();
 			} else if ( look(Token.TYPE_LPARENT) ) {
 				consume();
 				parseExp();
@@ -623,10 +630,13 @@ package beef.script {
 			}
 		}
 		
-		protected function parseFunction():void {
+		protected function parseFunction(fromTopLevel:Boolean = false):void {
 			consume(Token.TYPE_FUNCTION);
-			var funcName:String = getToken(0).token;
-			consume();
+			var funcName:String = null;
+			if ( look(Token.TYPE_IDENT) ) {
+				funcName = getToken(0).token;
+				consume();
+			}
 			
 			var params:Vector.<String>;
 			if ( consume(Token.TYPE_LPARENT) ) {
@@ -653,6 +663,11 @@ package beef.script {
 				error("label[" + label + "] is not defined.");
 			}
 			mStack.pop();
+			
+			if ( !fromTopLevel ) {
+				var i:int = addConst(func);
+				addInstruction(Instruction.OPE_LOADK, increg(), i, 0);
+			}
 		}
 		
 		protected function parseParameterList():Vector.<String> {
@@ -803,14 +818,13 @@ package beef.script {
 			return inst;
 		}
 		protected function createFunction(name:String,params:Vector.<String>):ScriptFunction {
-			var fn:ScriptFunction = new ScriptFunction(params);
-			stack.addFunction(name, fn);
+			var fn:ScriptFunction = new ScriptFunction(params, mFuncSeqNum++);
+			if ( name != null ) {
+				stack.addFunction(name, fn);
+			}
 			return fn;
 		}
 		protected function addConst(value:Value):int {
-			if ( value == null || value.asString().value == "null" || value.asString().value == null ) {
-				trace("a");
-			}
 			var idx:int = stack.findConst(value);
 			if ( idx == -1 ) {
 				return stack.addConst(value);

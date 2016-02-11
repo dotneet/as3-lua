@@ -27,10 +27,13 @@ package beef.script {
 		// 未使用のレジスタ位置
 		private var mFreereg:int = 0;
 		
-		public function ScriptFunction(params:Vector.<String>=null) {
+		private var mSequenceNumber:int = 0;
+		
+		public function ScriptFunction(params:Vector.<String>=null, sequenceNumber:int = 0) {
 			if ( params != null ) {
 				mParams = params;
 			}
+			mSequenceNumber = sequenceNumber;
 			mLocals.push(new Vector.<String>());
 			for each ( var name:String in params ) {
 				addLocal(name);
@@ -140,7 +143,7 @@ package beef.script {
 		}
 		
 		public override function asString():StringValue {
-			return new StringValue("Function()");
+			return new StringValue("Function()#" + mSequenceNumber);
 		}
 		
 		/** 
@@ -155,7 +158,7 @@ package beef.script {
 					unresolevedLabels.push(u.label);
 				} else {
 					var toAddr:int = mLabels[u.label];
-					u.inst.a = (toAddr - u.address - 1);
+					u.inst.b = (toAddr - u.address - 1);
 				}
 			}
 			return unresolevedLabels;
@@ -172,8 +175,11 @@ package beef.script {
 			for ( var i:int = 0; i < depth; i++ ) {
 				depthSpace += '    ';
 			}
+			var idxValue:String = '';
 			for ( idx in mLocals ) {
-				s += depthSpace + ".local " + mLocals[idx] + " : " + idx + "\n";
+				for ( idxValue in mLocals[idx] ) {
+					s += depthSpace + ".local " + mLocals[idx][idxValue] + " : stack " + idx +  " " + idxValue + "\n";
+				}
 			}
 			for ( idx in mConsts ) {
 				s += depthSpace + ".const " + mConsts[idx] + " : " + idx + "\n";
