@@ -1,7 +1,7 @@
 # Beef
 
 ActionScript3.0(AS3) implementation of Lua.
-Beef intended to used as game script.
+Beef intend to be used as a game script.
 
 ## Features
  - parse and execute a Lua code.
@@ -9,7 +9,7 @@ Beef intended to used as game script.
  - virtual thread.(script-truntime can share context with other script-runtime.)
  - unicode Identifier.(incompatible with Lua)
 
-## Not Implemented Lua Specification
+## Follow Lua Specification Is Not Implemented
  - Metatable
  - Coroutines
  - almost standard function.
@@ -19,7 +19,7 @@ Beef intended to used as game script.
 
 ### call AS3 method from Lua
 
-#### 1. Create AS3 Class which called as Lua function.
+#### 1. Create an AS3 Class called as a Lua function.
 ```as3
 public class FuncWaitTime extends SystemFunction {
     public function FuncWaitTime() {
