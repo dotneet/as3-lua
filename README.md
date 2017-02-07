@@ -9,7 +9,7 @@ Beef intend to be used as a game script.
  - virtual thread.(script-truntime can share context with other script-runtime.)
  - unicode Identifier.(incompatible with Lua)
 
-## Follow Lua Specification Is Not Implemented
+## Following specifications is not implemented
  - Metatable
  - Coroutines
  - almost standard function.
@@ -67,7 +67,7 @@ square(50)
 ## License
 >The MIT License (MIT)
 >
->Copyright (c) <year> <copyright holders>
+>Copyright (c) <2017> devneko<dotneet@gmail.com>
 >
 >Permission is hereby granted, free of charge, to any person obtaining a copy
 >of this software and associated documentation files (the "Software"), to deal
